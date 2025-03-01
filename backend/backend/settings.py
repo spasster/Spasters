@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 
     'authentaction',
     'products',
+    'orders',
 
     'corsheaders'
 ]

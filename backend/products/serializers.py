@@ -15,10 +15,13 @@ class ProductPhotosSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     photos = ProductPhotosSerializer(many=True, required=False)  # Используем сериализатор для фоток
+    seller_email = serializers.CharField(source='seller.email')
+    seller_bio = serializers.CharField(source='seller.bio')
+    seller_id = serializers.CharField(source='seller.id')
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'price', 'type', 'category', 'description', 'active', 'photos', 'number']
+        fields = ['id', 'title', 'price', 'type', 'category', 'description', 'active', 'photos', 'number', 'seller_email', 'seller_bio', 'seller_id']
 
     def create(self, validated_data):
         photos_data = validated_data.pop('photos', [])  # Извлекаем фотографии, если они есть

@@ -35,6 +35,7 @@ urlpatterns = [
     
     path('api/auth/', include('authentaction.urls')),
     path('api/products/', include('products.urls')),
+    path('api/order/', include('orders.urls')),
 
     path('ping/', ping, name='ping'),
 
