@@ -1,2 +1,4 @@
 /.idea
 /venv
+backend/*/migrations
+backend/*/__pycache__

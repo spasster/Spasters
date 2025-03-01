@@ -1,0 +1,44 @@
+from rest_framework import serializers
+from .models import User
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    default_user = serializers.BooleanField(required=False, default=False)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'default_user']
+
+    def create(self, validated_data):
+        default_user = validated_data.pop('default_user', False)
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            acc_type='seller' if not default_user else 'user',
+            activated=True if default_user else False,
+            inn=0
+        )
+        return user
+
+
+class CustomAuthTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        # Попытка получить пользователя по email
+        user = get_user_model().objects.filter(email=email).first()
+        
+        if user and user.check_password(password):
+            # Если пользователь найден и пароль верен, возвращаем его
+            return {'user': user}
+
+        raise serializers.ValidationError("Invalid email or password")
+
+    def get_token(self, user):
+        return RefreshToken.for_user(user)
