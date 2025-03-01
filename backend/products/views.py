@@ -65,3 +65,20 @@ class ProductListView(generics.ListAPIView):
             })
 
         return Response(response_data)
+
+
+# views.py
+from rest_framework import generics
+from .models import Category
+from .serializers import CategorySerializer
+
+# Вьюха для получения всех категорий
+class CategoryListView(generics.ListCreateAPIView):
+    queryset = Category.objects.all()  # Получаем все категории
+    serializer_class = CategorySerializer
+
+# Вьюха для создания новой категории
+class CategoryCreateView(generics.CreateAPIView):
+    queryset = Category.objects.all()  # Создаем новую категорию
+    serializer_class = CategorySerializer
+

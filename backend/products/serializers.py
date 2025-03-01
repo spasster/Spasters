@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductPhotos
+from .models import *
 
 
 class ProductPhotosSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'price', 'type', 'category', 'description', 'active', 'photos']
+        fields = ['id', 'title', 'price', 'type', 'category', 'description', 'active', 'photos', 'number']
 
     def create(self, validated_data):
         photos_data = validated_data.pop('photos', [])  # Извлекаем фотографии, если они есть
@@ -33,3 +33,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
         return product
 
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']

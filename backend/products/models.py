@@ -10,6 +10,7 @@ class Product(models.Model):
     description = models.TextField()
     active = models.BooleanField(default=True)
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    number = models.IntegerField(default=1)
 
     def __str__(self):
         return self.title
@@ -21,3 +22,12 @@ class ProductPhotos(models.Model):
 
     def __str__(self):
         return f"Photo for product {self.product.id}"
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=255)  # Название категории
+
+    def __str__(self):
+        return self.name
+
+        
