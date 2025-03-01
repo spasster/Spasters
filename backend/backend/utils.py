@@ -15,19 +15,20 @@ def generate_payment_link(
         is_test=1,
         number=0,
         robokassa_payment_url='https://auth.robokassa.ru/Merchant/Index.aspx',
+        sum=100
 ) -> str:
     """URL for redirection of the customer to the service.
     """
     signature = calculate_signature(
         merchant_login,
-        500,
+        sum,
         number,
         merchant_test_password_1
     )
 
     data = {
         'MerchantLogin': merchant_login,
-        'OutSum': 500,
+        'OutSum': sum,
         'InvId': number,
         'Description': "Оплата товара",
         'SignatureValue': signature,
@@ -35,5 +36,3 @@ def generate_payment_link(
     }
     return f'{robokassa_payment_url}?{parse.urlencode(data)}'
     
-
-print(generate_payment_link())
