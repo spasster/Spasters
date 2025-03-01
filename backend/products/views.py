@@ -38,6 +38,7 @@ class ProductListView(generics.ListAPIView):
         if type:
             queryset = queryset.filter(type=type)
 
+        # Если указан id, фильтруем по id
         if id:
             queryset = queryset.filter(id=id)
 
@@ -45,5 +46,22 @@ class ProductListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+
+        # Группируем товары по категориям
+        categories = {}
+        for product in queryset:
+            category = product.category
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(product)
+
+        # Создаем ответ с категориями и товарами в каждой категории
+        response_data = []
+        for category, products_in_category in categories.items():
+            serialized_products = ProductSerializer(products_in_category, many=True).data
+            response_data.append({
+                'category': category,
+                'products': serialized_products
+            })
+
+        return Response(response_data)

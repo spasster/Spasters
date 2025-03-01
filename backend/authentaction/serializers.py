@@ -46,7 +46,7 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ['id', 'email', 'inn']  # Выводим только email и inn
+        fields = ['id', 'email', 'inn', 'activated']  # Выводим только email и inn
 
 
 class SellerReviewSerializer(serializers.ModelSerializer):
