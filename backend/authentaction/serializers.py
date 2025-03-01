@@ -42,3 +42,9 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 
     def get_token(self, user):
         return RefreshToken.for_user(user)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ['email', 'inn']  # Выводим только email и inn

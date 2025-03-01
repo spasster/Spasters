@@ -17,7 +17,7 @@ import datetime as dt
 
 from .models import User
 
-from .serializers import UserRegistrationSerializer, CustomAuthTokenSerializer
+from .serializers import UserRegistrationSerializer, CustomAuthTokenSerializer, UserSerializer
 
 
 @api_view(['POST'])
@@ -98,7 +98,8 @@ def add_inn(request):
         return Response({"detail": response['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     
     # Проверяем, что статус ИНН вернул успешный результат
-    if response.get('status') != 'OK':  # Статус 'OK' - это пример, зависит от структуры ответа
+    if not response.get('status'):  # Статус 'OK' - это пример, зависит от структуры ответа
+        
         return Response({"detail": "Невалидный ИНН."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Получаем текущего пользователя
@@ -106,6 +107,16 @@ def add_inn(request):
 
     # Добавляем ИНН в модель пользователя
     user.inn = inn
+    user.activated = True
     user.save()
 
     return Response({"detail": "ИНН успешно добавлен."}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Доступ только для авторизованных пользователей
+def get_user_info(request):
+    """Получение информации о пользователе."""
+    user = request.user  # Получаем текущего пользователя
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
