@@ -12,8 +12,9 @@ def ping(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
     path('api/auth/', include('authentaction.urls')),
+    path('api/products/', include('products.urls')),
 
     path('ping/', ping, name='ping'),
-    path('api/products/', include('products.urls')),
 ]
