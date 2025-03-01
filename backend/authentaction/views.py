@@ -14,10 +14,14 @@ from rest_framework import generics
 from django.conf import settings
 import httpx
 import datetime as dt
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
-from .models import User
+from .models import User, SellerReviews
+from products.models import Product
 
-from .serializers import UserRegistrationSerializer, CustomAuthTokenSerializer, UserSerializer
+from products.serializers import ProductSerializer
+from .serializers import UserRegistrationSerializer, CustomAuthTokenSerializer, UserSerializer, SellerReviewSerializer
 
 
 @api_view(['POST'])
@@ -115,8 +119,56 @@ def add_inn(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Доступ только для авторизованных пользователей
-def get_user_info(request):
+def get_my_info(request):
     """Получение информации о пользователе."""
     user = request.user  # Получаем текущего пользователя
     serializer = UserSerializer(user)
     return Response(serializer.data)
+
+
+class SellerReviewCreateView(generics.CreateAPIView):
+    queryset = SellerReviews.objects.all()
+    serializer_class = SellerReviewSerializer
+    permission_classes = [IsAuthenticated]  # Только авторизованные пользователи могут оставлять комментарии
+
+    def perform_create(self, serializer):
+        # Получаем seller_id из данных запроса
+        seller_id = self.request.data.get('seller')
+        if not seller_id:
+            raise ValidationError("Seller ID is required.")
+        
+        # Получаем продавца по ID
+        seller = get_object_or_404(get_user_model(), id=seller_id)
+        
+        # Сохраняем отзыв, привязываем его к продавцу через сериализатор
+        serializer.save(seller=seller)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_info(request, user_id):
+    """Получение информации о пользователе по его ID, его отзывах и товарах."""
+    # Попытка получить пользователя по переданному ID
+    try:
+        user = get_user_model().objects.get(id=user_id)
+    except get_user_model().DoesNotExist:
+        raise NotFound(detail="User not found.")  # Возвращаем ошибку 404, если пользователь не найден
+
+    # Получаем все отзывы для текущего продавца
+    reviews = SellerReviews.objects.filter(seller=user)  # Фильтруем по продавцу (пользователю)
+
+    # Получаем все товары текущего пользователя
+    products = Product.objects.filter(seller=user, active=True)  # Только активные товары
+
+    # Используем сериализаторы для отзыва и товаров
+    review_serializer = SellerReviewSerializer(reviews, many=True)
+    product_serializer = ProductSerializer(products, many=True)
+
+    # Создаем итоговый ответ
+    response_data = {
+        'user': UserSerializer(user).data,
+        'reviews': review_serializer.data,
+        'products': product_serializer.data
+    }
+
+    return Response(response_data)

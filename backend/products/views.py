@@ -28,6 +28,7 @@ class ProductListView(generics.ListAPIView):
         # Получаем параметры category и type из запроса
         category = self.request.query_params.get('category', None)
         type = self.request.query_params.get('type', None)
+        id = self.request.query_params.get('id', None)
 
         # Если указана категория, фильтруем по ней
         if category:
@@ -36,6 +37,9 @@ class ProductListView(generics.ListAPIView):
         # Если указан тип, фильтруем по нему
         if type:
             queryset = queryset.filter(type=type)
+
+        if id:
+            queryset = queryset.filter(id=id)
 
         return queryset
 

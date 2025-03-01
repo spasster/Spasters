@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, SellerReviews
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
+from products.serializers import ProductSerializer
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     default_user = serializers.BooleanField(required=False, default=False)
@@ -47,4 +48,28 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ['email', 'inn']  # Выводим только email и inn
+        fields = ['id', 'email', 'inn']  # Выводим только email и inn
+
+
+class SellerReviewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)  # Информация о пользователе, который оставил отзыв
+
+    class Meta:
+        model = SellerReviews
+        fields = ['id', 'text', 'seller', 'user']
+
+    def create(self, validated_data):
+        user = self.context['request'].user  # Получаем пользователя из запроса
+        seller = validated_data.get('seller')  # Получаем продавца из данных
+
+        # Создаем новый отзыв
+        return SellerReviews.objects.create(user=user, seller=seller, text=validated_data['text'])
+
+
+class UserWithReviewsAndProductsSerializer(serializers.ModelSerializer):
+    reviews = SellerReviewSerializer(many=True, read_only=True)  # Отзывы для продавца
+    products = ProductSerializer(many=True, read_only=True)  # Продукты продавца
+
+    class Meta:
+        model = get_user_model()
+        fields = ['email', 'inn', 'reviews', 'products']  # Выводим email, inn, отзывы и товары

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.conf import settings
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -32,3 +33,12 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return self.email
+
+
+class SellerReviews(models.Model):
+    text = models.TextField()
+    seller = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='reviews', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='given_reviews', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Review for {self.seller.username} by {self.user.username}"
