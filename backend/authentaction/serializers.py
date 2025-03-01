@@ -13,12 +13,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['email', 'password', 'default_user']
 
     def create(self, validated_data):
-        default_user = validated_data.pop('default_user', False)
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            acc_type='seller' if not default_user else 'user',
-            activated=True if default_user else False,
+            activated=False,
             inn=0
         )
         return user

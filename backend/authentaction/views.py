@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.views import APIView
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework import generics
@@ -16,7 +17,7 @@ import httpx
 import datetime as dt
 from django.conf import settings
 from django.contrib.auth import get_user_model
-
+import requests
 from .models import User, SellerReviews
 from products.models import Product
 
@@ -68,62 +69,68 @@ class CustomAuth(TokenObtainPairView):
         }, status=status.HTTP_200_OK)
 
 
-# Функция для проверки ИНН через внешний API
-def check_status(inn: str, date: dt.date = None) -> dict:
-    """Проверка ИНН через внешнее API."""
-    date = date or dt.date.today()
-    date_str = date.isoformat()
-    url = "https://statusnpd.nalog.ru/api/v1/tracker/taxpayer_status"
+def suggest_inn(surname, name, patronymic, birthdate, doctype, docnumber, docdate):
+    url = "https://service.nalog.ru/inn-proc.do"
     data = {
-        "inn": inn,
-        "requestDate": date_str,
+        "fam": surname,
+        "nam": name,
+        "otch": patronymic,
+        "bdate": birthdate,
+        "bplace": "",
+        "doctype": doctype,
+        "docno": docnumber,
+        "docdt": docdate,
+        "c": "innMy",
+        "captcha": "",
+        "captchaToken": "",
     }
-    try:
-        resp = httpx.post(url=url, json=data)
-        return resp.json()
-    except httpx.RequestError as e:
-        return {"error": f"Ошибка при обращении к API: {e}"}
+    resp = requests.post(url=url, data=data)
+    resp.raise_for_status()
+    return resp.json()
 
-# Вьюха для добавления ИНН в пользователя
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def add_inn(request):
-    """Функция для добавления ИНН пользователю после проверки через внешний API."""
-    inn = request.data.get('inn')
+def check_inn(request):
+    # Получаем данные из запроса
+    surname = request.data.get('surname')
+    name = request.data.get('name')
+    patronymic = request.data.get('patronymic')
+    birthdate = request.data.get('birthdate')
+    docnumber = request.data.get('docnumber')
+    docdate = request.data.get('docdate')
+    inn_from_front = request.data.get('inn')  # ИНН, который передается с фронта
+    doctype = "21"
 
-    if not inn:
-        return Response({"detail": "ИНН не предоставлен."}, status=status.HTTP_400_BAD_REQUEST)
+    # Валидация данных
+    if not all([surname, name, patronymic, birthdate, docnumber, docdate, inn_from_front]):
+        return JsonResponse({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Проверка ИНН через API
-    response = check_status(inn)
-    
-    # Проверяем, если ошибка при запросе
-    if 'error' in response:
-        return Response({"detail": response['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    
-    # Проверяем, что статус ИНН вернул успешный результат
-    if not response.get('status'):  # Статус 'OK' - это пример, зависит от структуры ответа
-        
-        return Response({"detail": "Невалидный ИНН."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        # Получаем ИНН от сервиса налоговой
+        response = suggest_inn(
+            surname=surname,
+            name=name,
+            patronymic=patronymic,
+            birthdate=birthdate,
+            doctype=doctype,
+            docnumber=docnumber,
+            docdate=docdate
+        )
 
-    # Получаем текущего пользователя
-    user = request.user
-
-    # Добавляем ИНН в модель пользователя
-    user.inn = inn
-    user.activated = True
-    user.save()
-
-    return Response({"detail": "ИНН успешно добавлен."}, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])  # Доступ только для авторизованных пользователей
-def get_my_info(request):
-    """Получение информации о пользователе."""
-    user = request.user  # Получаем текущего пользователя
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+        print(response)
+        # Проверяем, совпадает ли ИНН с тем, что передал фронт
+        if response['inn'] == inn_from_front:
+            user = request.user
+            
+            # Обновляем данные пользователя
+            user.activated = True
+            user.inn = inn_from_front
+            user.save()
+            return JsonResponse({'message': 'INN match success', 'inn': response['inn']}, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({'error': 'INN does not match'}, status=status.HTTP_400_BAD_REQUEST)
+    except requests.RequestException as e:
+        return JsonResponse({'error': f'Error calling INN service: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SellerReviewCreateView(generics.CreateAPIView):
@@ -142,6 +149,36 @@ class SellerReviewCreateView(generics.CreateAPIView):
         
         # Сохраняем отзыв, привязываем его к продавцу через сериализатор
         serializer.save(seller=seller)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Доступ только для авторизованных пользователей
+def get_my_info(request):
+    """Получение информации о пользователе по его ID, его отзывах и товарах."""
+    try:
+        user = request.user
+    except get_user_model().DoesNotExist:
+        raise NotFound(detail="User not found.")  # Возвращаем ошибку 404, если пользователь не найден
+
+    # Получаем все отзывы для текущего продавца
+    reviews = SellerReviews.objects.filter(seller=user)  # Фильтруем по продавцу (пользователю)
+
+    # Получаем все товары текущего пользователя
+    products = Product.objects.filter(seller=user, active=True)  # Только активные товары
+
+    # Используем сериализаторы для отзыва и товаров
+    review_serializer = SellerReviewSerializer(reviews, many=True)
+    product_serializer = ProductSerializer(products, many=True)
+
+    # Создаем итоговый ответ
+    response_data = {
+        'user': UserSerializer(user).data,
+        'reviews': review_serializer.data,
+        'products': product_serializer.data
+    }
+
+    return Response(response_data)
 
 
 @api_view(['GET'])

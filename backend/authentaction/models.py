@@ -22,7 +22,6 @@ class User(AbstractBaseUser):
     id = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
-    acc_type = models.CharField(max_length=50, default='user')
     activated = models.BooleanField(default=False)
     inn = models.CharField(max_length=255)
     

@@ -10,8 +10,7 @@ urlpatterns = [
     path('register/', views.register_user, name='auth_register'),
     path('login/', views.CustomAuth.as_view(), name='auth_login'),
 
-    path('add_inn/', views.add_inn, name='add_inn'),
-    # path('check_inn/', views.check_inn, name='check_inn'),
+    path('check_inn/', views.check_inn, name='check_inn'),
 
     path('user_info/', views.get_my_info, name='get_user_info'),
     path('seller_info/<int:user_id>/', views.get_user_info, name='get_seller_info'),
