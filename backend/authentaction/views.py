@@ -240,9 +240,16 @@ def update_avatar(request):
     if not avatar_base64:
         return Response({'detail': 'Avatar in base64 format is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        # Проверяем, что это валидная строка base64
-        image_data = base64.b64decode(avatar_base64.split(',')[1])
-        image = Image.open(BytesIO(image_data))
-    except Exception as e:
-        return Response({'detail': 'Invalid image data.'}, status=status.HTTP_400_BAD_REQUEST)
+    # try:
+    #     # Проверяем, что это валидная строка base64
+    #     image_data = base64.b64decode(avatar_base64.split(',')[1])
+    #     image = Image.open(BytesIO(image_data))
+    # except Exception as e:
+    #     return Response({'detail': 'Invalid image data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Сохраняем аватар в поле аватара
+    user = request.user  # Получаем текущего пользователя
+    user.avatar = avatar_base64  # Сохраняем Base64 строку в поле
+    user.save()
+
+    return Response({'detail': 'Avatar updated successfully.'}, status=status.HTTP_200_OK)
