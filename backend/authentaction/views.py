@@ -215,14 +215,13 @@ def get_user_info(request, user_id):
 def update_bio(request):
     """Изменить био пользователя"""
     # Получаем данные из запроса
-    password = request.data.get('password')
     new_bio = request.data.get('bio')
     
-    if not password or not new_bio:
-        return Response({'detail': 'Password and bio are required.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not new_bio:
+        return Response({'detail': 'bio are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Проверка пользователя по паролю
-    user = authenticate(request, email=request.user.email, password=password)
+    user = request.user
     if not user:
         return Response({'detail': 'Invalid password.'}, status=status.HTTP_400_BAD_REQUEST)
 
