@@ -230,3 +230,19 @@ def update_bio(request):
     user.save()
 
     return Response({'detail': 'Bio updated successfully.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def update_avatar(request):
+    """Обновить аватар пользователя в формате Base64"""
+    avatar_base64 = request.data.get('avatar')
+
+    if not avatar_base64:
+        return Response({'detail': 'Avatar in base64 format is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Проверяем, что это валидная строка base64
+        image_data = base64.b64decode(avatar_base64.split(',')[1])
+        image = Image.open(BytesIO(image_data))
+    except Exception as e:
+        return Response({'detail': 'Invalid image data.'}, status=status.HTTP_400_BAD_REQUEST)

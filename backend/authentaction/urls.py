@@ -21,4 +21,6 @@ urlpatterns = [
     path('reviews/', views.SellerReviewCreateView.as_view(), name='create-seller-review'),
 
     path('update_bio/', views.update_bio, name='update_bio'),
+    path('update_avatar/', views.update_avatar, name='update_avatar'),
+
 ]
