@@ -72,7 +72,7 @@ const items = ref([
           items: [
             { 
               label: 'Техника', 
-              command: () => navigateTo('/products/product/Смартфоны'),
+              command: () => navigateTo('/products/product/Техника'),
             },
             { 
               label: 'Свечи', 

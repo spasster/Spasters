@@ -112,7 +112,7 @@ export default defineNuxtConfig({
   },
   chatwoot: {
     init: {
-      websiteToken: '91ewEZ9uiqTrNsmqJwnbe9Mc'
+      websiteToken: 'hgtcfHPGX3n9AGjoPXKbiqVz'
     },
     settings: {
       locale: 'ru',
