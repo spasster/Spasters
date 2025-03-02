@@ -182,7 +182,6 @@ def get_my_info(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def get_user_info(request, user_id):
     """Получение информации о пользователе по его ID, его отзывах и товарах."""
     # Попытка получить пользователя по переданному ID
