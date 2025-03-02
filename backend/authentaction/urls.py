@@ -19,4 +19,6 @@ urlpatterns = [
     path('verify/', TokenVerifyView.as_view(), name='token_verify'),
 
     path('reviews/', views.SellerReviewCreateView.as_view(), name='create-seller-review'),
+
+    path('update_bio/', views.update_bio, name='update_bio'),
 ]

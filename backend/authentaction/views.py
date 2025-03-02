@@ -20,6 +20,7 @@ from django.contrib.auth import get_user_model
 import requests
 from .models import User, SellerReviews
 from products.models import Product
+from django.contrib.auth import authenticate
 
 from products.serializers import ProductSerializer
 from .serializers import UserRegistrationSerializer, CustomAuthTokenSerializer, UserSerializer, SellerReviewSerializer
@@ -208,3 +209,25 @@ def get_user_info(request, user_id):
     }
 
     return Response(response_data)
+
+
+@api_view(['POST'])
+def update_bio(request):
+    """Изменить био пользователя"""
+    # Получаем данные из запроса
+    password = request.data.get('password')
+    new_bio = request.data.get('bio')
+    
+    if not password or not new_bio:
+        return Response({'detail': 'Password and bio are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Проверка пользователя по паролю
+    user = authenticate(request, email=request.user.email, password=password)
+    if not user:
+        return Response({'detail': 'Invalid password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Обновляем био пользователя
+    user.bio = new_bio
+    user.save()
+
+    return Response({'detail': 'Bio updated successfully.'}, status=status.HTTP_200_OK)
