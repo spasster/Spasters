@@ -15,16 +15,17 @@ class ProductPhotosSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     photos = ProductPhotosSerializer(many=True, required=False)  # Используем сериализатор для фоток
-    seller_email = serializers.CharField(source='seller.email')
-    seller_bio = serializers.CharField(source='seller.bio')
-    seller_id = serializers.CharField(source='seller.id')
+    seller_email = serializers.CharField(source='seller.email', read_only=True)
+    seller_bio = serializers.CharField(source='seller.bio', read_only=True)
+    seller_id = serializers.IntegerField(source='seller.id', read_only=True)
 
     class Meta:
         model = Product
         fields = ['id', 'title', 'price', 'type', 'category', 'description', 'active', 'photos', 'number', 'seller_email', 'seller_bio', 'seller_id']
 
     def create(self, validated_data):
-        photos_data = validated_data.pop('photos', [])  # Извлекаем фотографии, если они есть
+        # Извлекаем фотографии, если они есть
+        photos_data = validated_data.pop('photos', [])
         user = self.context['request'].user  # Получаем текущего пользователя из контекста
 
         # Создаем новый продукт
@@ -35,6 +36,7 @@ class ProductSerializer(serializers.ModelSerializer):
             ProductPhotos.objects.create(product=product, photo=photo_data['photo'])
 
         return product
+
 
 
 class CategorySerializer(serializers.ModelSerializer):
